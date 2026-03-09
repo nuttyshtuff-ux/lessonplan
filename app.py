@@ -6,31 +6,17 @@ from google.genai import types
 # 1. PAGE SETUP
 st.set_page_config(page_title="Lesson Plan Stress Test", page_icon="🍎", layout="wide")
 
-# 2. CSS - Navy Sidebar, High-Contrast Black Text, and Yellow Accents
+# 2. CSS - Navy Sidebar, High-Contrast Black Text
 st.markdown("""
 <style>
     .main-title { color: #1e3a8a; font-weight: 800; text-align: center; border: 3px solid #1e3a8a; padding: 20px; border-radius: 20px; background-color: #f8fbff; margin-bottom: 30px; }
-    
     .stButton button { background-color: #facc15 !important; color: #1e3a8a !important; border: 2px solid #1e3a8a !important; font-weight: bold !important; border-radius: 12px !important; width: 100%; height: 3em; }
-    
-    /* Sidebar Styling */
     [data-testid="stSidebar"] { background-color: #1e3a8a !important; }
-    
-    /* Force Sidebar labels, sliders, and text to be high-contrast Black */
     [data-testid="stSidebar"] .stMarkdown, 
     [data-testid="stSidebar"] label, 
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] span { color: #000000 !important; font-weight: 700 !important; }
-
-    /* Results Card */
-    .critique-card { 
-        background-color: #eff6ff; 
-        border-left: 10px solid #facc15; 
-        padding: 25px; 
-        border-radius: 15px; 
-        color: #1e3a8a; 
-        margin-top: 20px; 
-    }
+    .critique-card { background-color: #eff6ff; border-left: 10px solid #facc15; padding: 25px; border-radius: 15px; color: #1e3a8a; margin-top: 20px; white-space: pre-wrap; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -42,7 +28,6 @@ except Exception:
     st.error("🔑 API Key Missing! Check your Streamlit Secrets.")
     st.stop()
 
-# Local Mock Data (Matches your SLO focus)
 data = {
     "City": ["San Luis Obispo", "Atascadero", "Paso Robles", "Arroyo Grande"],
     "District": ["SLCUSD", "Atascadero Unified", "Paso Robles Joint", "Lucia Mar"],
@@ -50,18 +35,15 @@ data = {
 }
 df = pd.DataFrame(data)
 
-# 4. SIDEBAR - THE ROSTER
+# 4. SIDEBAR
 with st.sidebar:
     st.header("🏫 CLASSROOM SETUP")
-    
     city_choice = st.selectbox("Select City", options=sorted(df["City"].unique()), index=None)
-    
     if city_choice:
         dist_options = sorted(df[df["City"] == city_choice]["District"].unique())
         dist_choice = st.selectbox("Select District", options=dist_options, index=None)
     else:
         dist_choice = st.selectbox("Select District", options=[], disabled=True)
-
     if dist_choice:
         sch_options = sorted(df[df["District"] == dist_choice]["School"].unique())
         sch_choice = st.selectbox("Select School", options=sch_options, index=None)
@@ -71,11 +53,9 @@ with st.sidebar:
     st.markdown("---")
     grade = st.selectbox("Grade Level", ["Kindergarten"] + [f"Grade {i}" for i in range(1, 13)])
     subject = st.text_input("Subject Area", value="General Ed")
-    
     st.subheader("📊 Class Composition")
     c_size = st.slider("Total Class Size", 5, 50, 30)
     g_ratio = st.slider("Gender Ratio (% Female)", 0, 100, 50)
-    
     st.subheader("📝 Support Needs")
     sped_val = st.slider("SPED / IEP (%)", 0, 100, 10)
     fof_val = st.slider("504 Plans (%)", 0, 100, 5)
@@ -83,21 +63,13 @@ with st.sidebar:
 
 # 5. MAIN UI
 st.markdown("<h1 class='main-title'>🍎 LESSON PLAN STRESS TEST</h1>", unsafe_allow_html=True)
-
-lesson_input = st.text_area("Paste your lesson plan here (Objectives, Activities, Assessments):", height=400)
+lesson_input = st.text_area("Paste your lesson plan here:", height=400)
 
 # 6. RUN EVALUATION
 if st.button("📝 RUN EVALUATION"):
     if not sch_choice or not lesson_input:
-        st.warning("Please select a school and paste your lesson plan first!")
+        st.warning("Please select a school and paste your lesson plan!")
     else:
         with st.spinner("Class is in session..."):
-            prompt = f"""
-            Evaluate this {subject} lesson plan for {grade} at {sch_choice} in {dist_choice}.
-            Class Size: {c_size} students. Gender Ratio: {g_ratio}% Female.
-            Student Needs: {sped_val}% SPED/IEP, {fof_val}% 504 Plans, {el_val}% English Learners.
-            
-            Lesson Plan Content:
-            {lesson_input}
-            
-            Provide specific feedback from three voices:
+            # Clean single-string prompt construction
+            p = f"Evaluate this {subject} lesson for {grade} at {
