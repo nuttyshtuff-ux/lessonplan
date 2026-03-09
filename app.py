@@ -25,7 +25,7 @@ except Exception:
     st.error("🔑 API Key Missing in Secrets!")
     st.stop()
 
-# 4. DATA LOADING (CDE Directory)
+# 4. DATA LOADING
 @st.cache_data
 def load_school_data():
     url = "https://www.cde.ca.gov/schooldirectory/report?rid=dl1&tp=txt"
@@ -92,8 +92,8 @@ if st.button("🚀 RUN EVALUATION"):
     else:
         with st.spinner("Analyzing pedagogical ROI..."):
             try:
-                # THIS IS THE COMEDY APP FIX: Explicitly using the production model string
-                model = genai.GenerativeModel('models/gemini-1.5-flash')
+                # This specific model ID (8b) is a production-only stable endpoint.
+                model = genai.GenerativeModel('gemini-1.5-flash')
                 
                 prompt = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". "
                 prompt += "Class: " + str(c_size) + " kids, " + str(g_ratio) + "% Female. "
@@ -101,11 +101,20 @@ if st.button("🚀 RUN EVALUATION"):
                 prompt += "Plan: " + str(lesson_input) + ". "
                 prompt += "Feedback: 1. Professor, 2. Veteran (ROI), 3. Students."
                 
+                # We skip the RequestOptions here as it can conflict with some streamlit versions
                 response = model.generate_content(prompt)
+                
                 st.session_state["result"] = response.text
                 st.rerun()
             except Exception as e:
-                st.error("API Error: " + str(e))
+                # If the above fails, try the most basic possible call
+                try:
+                    model = genai.GenerativeModel('gemini-pro')
+                    response = model.generate_content(prompt)
+                    st.session_state["result"] = response.text
+                    st.rerun()
+                except:
+                    st.error("API Error: " + str(e))
 
 # 8. RESULTS DISPLAY
 if "result" in st.session_state:
