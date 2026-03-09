@@ -37,11 +37,10 @@ def load_school_data():
 
 df = load_school_data()
 
-# 5. SIDEBAR (Restored Sliders and Updated City Label)
+# 5. SIDEBAR
 with st.sidebar:
     st.header("🏫 CLASSROOM SETUP")
     
-    # Updated City Label
     city_input = st.text_input("Enter city to select district").strip()
     
     if city_input:
@@ -59,7 +58,6 @@ with st.sidebar:
     grade = st.selectbox("Grade Level", ["Kindergarten"] + ["Grade " + str(i) for i in range(1, 13)])
     subject = st.text_input("Subject Area", value="History")
 
-    # RESTORED SLIDERS
     st.subheader("📊 Class Composition")
     c_size = st.slider("Total Class Size", 5, 50, 30)
     g_ratio = st.slider("Gender Ratio (% Female)", 0, 100, 50)
@@ -81,7 +79,10 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-lesson_input = st.text_area("Your Lesson Plan:", height=300, placeholder="Paste your lesson plan here...")
+# RESTORED INSTRUCTIONS
+p_text = "Paste your lesson plan here. For best evaluation be sure your plan includes:\n- Learning Objectives\n- Standards (CCSS, NGSS, etc.)\n- Step-by-Step Activities\n- How you will check for understanding"
+
+lesson_input = st.text_area("Your Lesson Plan:", height=300, placeholder=p_text)
 
 # 7. RUN EVALUATION
 if st.button("🚀 RUN EVALUATION"):
@@ -89,7 +90,6 @@ if st.button("🚀 RUN EVALUATION"):
         st.warning("Please select a school and paste your lesson plan first!")
     else:
         with st.spinner("Analyzing pedagogical ROI..."):
-            # Detailed Prompt using all sidebar variables
             p = f"Evaluate this {subject} lesson for {grade} at {sch_choice}. "
             p += f"Class Size: {c_size}, Gender: {g_ratio}% Female. "
             p += f"Needs: {sped_val}% SPED, {fof_val}% 504, {el_val}% EL learners. "
@@ -97,7 +97,6 @@ if st.button("🚀 RUN EVALUATION"):
             p += "Feedback: 1. Cal Poly Professor, 2. Veteran Teacher (ROI), 3. Students."
             
             success = False
-            # FALLBACK LOOP - The "Secret Sauce" that fixed the 404
             for model_name in ["gemini-2.0-flash-001", "gemini-2.0-flash-exp", "gemini-1.5-pro"]:
                 try:
                     response = client.models.generate_content(
