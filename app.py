@@ -89,5 +89,31 @@ if st.button("🚀 RUN EVALUATION"):
         st.warning("Please select a school and paste your lesson plan first!")
     else:
         with st.spinner("Analyzing pedagogical ROI..."):
-            p = f"Evaluate this {subject} lesson for {grade} at {sch_choice}. "
-            p += f"Class Size: {c_size}, Gender: {g
+            # REBUILT PROMPT - No f-strings here to prevent bracket errors
+            p = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". "
+            p += "Class Size: " + str(c_size) + ", Gender: " + str(g_ratio) + "% Female. "
+            p += "Needs: " + str(sped_val) + "% SPED, " + str(fof_val) + "% 504, " + str(el_val) + "% EL learners. "
+            p += "Plan: " + str(lesson_input) + ". "
+            p += "Feedback: 1. Cal Poly Professor, 2. Veteran Teacher (ROI), 3. Students."
+            
+            success = False
+            for model_name in ["gemini-2.0-flash-001", "gemini-2.0-flash-exp", "gemini-1.5-pro"]:
+                try:
+                    response = client.models.generate_content(model=model_name, contents=p)
+                    st.session_state["result"] = response.text
+                    success = True
+                    break
+                except Exception:
+                    continue
+            
+            if success:
+                st.rerun()
+            else:
+                st.error("All models failed. Check your API key quota.")
+
+# 8. RESULTS DISPLAY
+if "result" in st.session_state:
+    st.markdown('<div class="critique-card"><h3>📋 The Feedback:</h3>' + str(st.session_state["result"]) + '</div>', unsafe_allow_html=True)
+    if st.button("Clear Results"):
+        del st.session_state["result"]
+        st.rerun()
