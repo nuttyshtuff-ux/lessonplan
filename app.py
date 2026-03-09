@@ -22,7 +22,7 @@ try:
     api_key = st.secrets["api_key"]
     client = genai.Client(api_key=api_key)
 except Exception:
-    st.error("🔑 API Key Missing!")
+    st.error("🔑 API Key Missing in Streamlit Secrets!")
     st.stop()
 
 # 4. DATA LOADING
@@ -74,4 +74,20 @@ st.markdown("""
 <div class="info-box">
     <strong>📋 What you'll get:</strong><br>
     • <strong>The Cal Poly Professor:</strong> High-level feedback on TPA alignment.<br>
-    • <strong>
+    • <strong>The Veteran Teacher:</strong> A reality check on prep-time vs. student benefit.<br>
+    • <strong>The Students:</strong> What the kids are actually thinking.
+</div>
+""", unsafe_allow_html=True)
+
+p_text = "Paste your lesson plan here (Word, PDF, and Google Doc text formats accepted). For best evaluation be sure your plan includes:\n- Learning Objectives\n- Standards (CCSS, NGSS, etc.)\n- Step-by-Step Activities\n- How you will check for understanding"
+
+lesson_input = st.text_area("Your Lesson Plan:", height=300, placeholder=p_text)
+
+# 7. RUN EVALUATION
+if st.button("🚀 RUN EVALUATION"):
+    if not sch_choice or not lesson_input:
+        st.warning("Please select a school and paste your lesson plan first!")
+    else:
+        with st.spinner("Analyzing pedagogical ROI..."):
+            p = f"Evaluate this {subject} lesson for {grade} at {sch_choice}. "
+            p += f"Class Size: {c_size}, Gender: {g
