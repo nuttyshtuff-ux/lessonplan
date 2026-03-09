@@ -55,7 +55,7 @@ with st.sidebar:
         sch_choice = st.selectbox("Select School", options=[], disabled=True)
 
     st.markdown("---")
-    grade = st.selectbox("Grade Level", ["Kindergarten"] + [f"Grade {i}" for i in range(1, 13)])
+    grade = st.selectbox("Grade Level", ["Kindergarten"] + ["Grade " + str(i) for i in range(1, 13)])
     subject = st.text_input("Subject Area", value="General Ed")
     
     st.subheader("📊 Class Composition")
@@ -64,18 +64,4 @@ with st.sidebar:
     
     st.subheader("📝 Support Needs")
     sped_val = st.slider("SPED / IEP (%)", 0, 100, 10)
-    fof_val = st.slider("504 Plans (%)", 0, 100, 5)
-    el_val = st.slider("English Learners (%)", 0, 100, 10)
-
-# 5. MAIN UI
-st.markdown("<h1 class='main-title'>🍎 LESSON PLAN STRESS TEST</h1>", unsafe_allow_html=True)
-lesson_input = st.text_area("Paste your lesson plan here:", height=400)
-
-# 6. RUN EVALUATION
-if st.button("📝 RUN EVALUATION"):
-    if not sch_choice or not lesson_input:
-        st.warning("Please select a school and paste your lesson plan first!")
-    else:
-        with st.spinner("Class is in session..."):
-            # Replaced f-strings with simple concatenation to prevent SyntaxErrors
-            p = "Evaluate this " + str(subject) + " lesson
+    fof_val = st.slider("504
