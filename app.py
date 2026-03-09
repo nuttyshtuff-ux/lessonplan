@@ -13,6 +13,7 @@ st.markdown("""
     [data-testid="stSidebar"] { background-color: #1e3a8a !important; }
     [data-testid="stSidebar"] .stMarkdown, [data-testid="stSidebar"] label, [data-testid="stSidebar"] p, [data-testid="stSidebar"] span { color: #000000 !important; font-weight: 700 !important; }
     .critique-card { background-color: #eff6ff; border-left: 10px solid #facc15; padding: 25px; border-radius: 15px; color: #1e3a8a; margin-top: 20px; white-space: pre-wrap; }
+    .info-box { background-color: #fef08a; padding: 15px; border-radius: 10px; color: #1e3a8a; border: 1px solid #facc15; margin-bottom: 20px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -35,8 +36,6 @@ df = pd.DataFrame(data)
 # 4. SIDEBAR
 with st.sidebar:
     st.header("🏫 CLASSROOM SETUP")
-    
-    # City as a text box per your request
     city_choice = st.text_input("City", help="Enter to choose district")
     
     if city_choice:
@@ -51,8 +50,6 @@ with st.sidebar:
 
     st.markdown("---")
     grade = st.selectbox("Grade Level", ["Kindergarten"] + ["Grade " + str(i) for i in range(1, 13)])
-    
-    # Prepopulated Subject Area
     subject = st.text_input("Subject Area", value="Choose your subject")
     
     st.subheader("📊 Class Composition")
@@ -66,16 +63,34 @@ with st.sidebar:
 
 # 5. MAIN UI
 st.markdown("<h1 class='main-title'>🍎 LESSON PLAN STRESS TEST</h1>", unsafe_allow_html=True)
-lesson_input = st.text_area("Paste your lesson plan here:", height=400)
+
+# THE NEW EXPLANATION BOX
+st.markdown("""
+<div class="info-box">
+    <strong>📋 What you'll get:</strong><br>
+    • <strong>The Cal Poly Professor:</strong> High-level feedback on TPA alignment and measurable objectives.<br>
+    • <strong>The Veteran Teacher:</strong> A "Real-World" reality check on prep-time vs. student benefit (ROI).<br>
+    • <strong>The Students:</strong> An unfiltered look at what the kids are actually thinking during your lesson.
+</div>
+""", unsafe_allow_html=True)
+
+# PREPOPULATED TEXT AREA
+placeholder_text = (
+    "Copy and paste your lesson plan here. For the best evaluation, include:\n"
+    "- Learning Objectives (What will they learn?)\n"
+    "- Standards (CCSS, NGSS, etc.)\n"
+    "- Step-by-Step Activities\n"
+    "- How you will check for understanding"
+)
+lesson_input = st.text_area("Your Lesson Plan:", height=350, placeholder=placeholder_text)
 
 # 6. RUN EVALUATION
 if st.button("🚀 RUN EVALUATION"):
     if not sch_choice or not lesson_input:
         st.warning("Please select a school and paste your lesson plan first!")
     else:
-        with st.spinner("Class is in session..."):
+        with st.spinner("Analyzing pedagogical ROI..."):
             p = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". Class Size: " + str(c_size) + ". Gender: " + str(g_ratio) + "% Female. Needs: " + str(sped_val) + "% SPED, " + str(fof_val) + "% 504, " + str(el_val) + "% EL. Plan: " + str(lesson_input) + ". Feedback from: 1. Cal Poly Professor (Rigor), 2. Veteran Teacher (ROI of prep), 3. Students."
-            
             try:
                 response = client.models.generate_content(model="gemini-1.5-flash", contents=p)
                 st.session_state["result"] = response.text
