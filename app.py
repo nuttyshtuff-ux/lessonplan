@@ -28,6 +28,7 @@ except Exception:
     st.error("🔑 API Key Missing! Check your Streamlit Secrets.")
     st.stop()
 
+# Local Mock Data
 data = {
     "City": ["San Luis Obispo", "Atascadero", "Paso Robles", "Arroyo Grande"],
     "District": ["SLCUSD", "Atascadero Unified", "Paso Robles Joint", "Lucia Mar"],
@@ -35,15 +36,18 @@ data = {
 }
 df = pd.DataFrame(data)
 
-# 4. SIDEBAR
+# 4. SIDEBAR - THE ROSTER
 with st.sidebar:
     st.header("🏫 CLASSROOM SETUP")
+    
     city_choice = st.selectbox("Select City", options=sorted(df["City"].unique()), index=None)
+    
     if city_choice:
         dist_options = sorted(df[df["City"] == city_choice]["District"].unique())
         dist_choice = st.selectbox("Select District", options=dist_options, index=None)
     else:
         dist_choice = st.selectbox("Select District", options=[], disabled=True)
+
     if dist_choice:
         sch_options = sorted(df[df["District"] == dist_choice]["School"].unique())
         sch_choice = st.selectbox("Select School", options=sch_options, index=None)
@@ -53,9 +57,11 @@ with st.sidebar:
     st.markdown("---")
     grade = st.selectbox("Grade Level", ["Kindergarten"] + [f"Grade {i}" for i in range(1, 13)])
     subject = st.text_input("Subject Area", value="General Ed")
+    
     st.subheader("📊 Class Composition")
     c_size = st.slider("Total Class Size", 5, 50, 30)
     g_ratio = st.slider("Gender Ratio (% Female)", 0, 100, 50)
+    
     st.subheader("📝 Support Needs")
     sped_val = st.slider("SPED / IEP (%)", 0, 100, 10)
     fof_val = st.slider("504 Plans (%)", 0, 100, 5)
@@ -68,8 +74,8 @@ lesson_input = st.text_area("Paste your lesson plan here:", height=400)
 # 6. RUN EVALUATION
 if st.button("📝 RUN EVALUATION"):
     if not sch_choice or not lesson_input:
-        st.warning("Please select a school and paste your lesson plan!")
+        st.warning("Please select a school and paste your lesson plan first!")
     else:
         with st.spinner("Class is in session..."):
-            # Clean single-string prompt construction
-            p = f"Evaluate this {subject} lesson for {grade} at {
+            # Replaced f-strings with simple concatenation to prevent SyntaxErrors
+            p = "Evaluate this " + str(subject) + " lesson
