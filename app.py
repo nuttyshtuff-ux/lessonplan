@@ -17,7 +17,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. API & DATA SETUP
+# 3. API SETUP
 try:
     api_key = st.secrets["api_key"]
     client = genai.Client(api_key=api_key)
@@ -25,26 +25,39 @@ except Exception:
     st.error("🔑 API Key Missing in Secrets!")
     st.stop()
 
-# Local Mock Data
-data = {
-    "City": ["San Luis Obispo", "San Luis Obispo", "Atascadero", "Atascadero", "Paso Robles", "Arroyo Grande"],
-    "District": ["SLCUSD", "SLCUSD", "Atascadero Unified", "Atascadero Unified", "Paso Robles Joint", "Lucia Mar"],
-    "School": ["San Luis High", "Laguna Middle", "Atascadero High", "Atascadero Middle", "Paso High", "Arroyo Grande High"]
-}
-df = pd.DataFrame(data)
+# 4. DATA LOADING - The Real California Directory
+@st.cache_data
+def load_school_data():
+    # Direct link to CDE Public School Directory
+    url = "https://www.cde.ca.gov/schooldirectory/report?rid=dl1&tp=txt"
+    # Loading as tab-separated since CDE uses .txt/tab format
+    df = pd.read_csv(url, sep='\t', encoding='latin1')
+    # Filter for active schools and keep necessary columns
+    df = df[df['StatusType'] == 'Active'][['City', 'District', 'School']]
+    return df
 
-# 4. SIDEBAR
+with st.spinner("Loading California School Directory..."):
+    df = load_school_data()
+
+# 5. SIDEBAR
 with st.sidebar:
     st.header("🏫 CLASSROOM SETUP")
-    city_choice = st.text_input("City", help="Enter to choose district")
     
-    if city_choice:
-        dist_choice = st.selectbox("Select District", options=sorted(df[df["City"] == city_choice]["District"].unique()), index=None)
+    # Text input for City as requested
+    city_input = st.text_input("City", help="Enter to choose district").strip()
+    
+    # Filter data based on city input
+    if city_input:
+        # Case-insensitive match for the city
+        city_match = df[df['City'].str.contains(city_input, case=False, na=False)]
+        dist_options = sorted(city_match['District'].unique())
+        dist_choice = st.selectbox("Select District", options=dist_options, index=None)
     else:
         dist_choice = st.selectbox("Select District", options=[], disabled=True)
 
     if dist_choice:
-        sch_choice = st.selectbox("Select School", options=sorted(df[df["District"] == dist_choice]["School"].unique()), index=None)
+        sch_options = sorted(df[df["District"] == dist_choice]["School"].unique())
+        sch_choice = st.selectbox("Select School", options=sch_options, index=None)
     else:
         sch_choice = st.selectbox("Select School", options=[], disabled=True)
 
@@ -61,7 +74,7 @@ with st.sidebar:
     fof_val = st.slider("504 Plan (%)", 0, 100, 5)
     el_val = st.slider("English Learners (%)", 0, 100, 10)
 
-# 5. MAIN UI
+# 6. MAIN UI
 st.markdown("<h1 class='main-title'>🍎 LESSON PLAN STRESS TEST</h1>", unsafe_allow_html=True)
 
 st.markdown("""
@@ -74,18 +87,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 p_text = "Paste your lesson plan here (Word, PDF, and Google Doc text formats accepted). For best evaluation be sure your plan includes:\n- Learning Objectives\n- Standards (CCSS, NGSS, etc.)\n- Step-by-Step Activities\n- How you will check for understanding"
-
 lesson_input = st.text_area("Your Lesson Plan:", height=350, placeholder=p_text)
 
-# 6. RUN EVALUATION
+# 7. RUN EVALUATION
 if st.button("🚀 RUN EVALUATION"):
     if not sch_choice or not lesson_input:
         st.warning("Please select a school and paste your lesson plan first!")
     else:
         with st.spinner("Analyzing pedagogical ROI..."):
-            # Fixed: One solid line for the prompt to prevent "invalid syntax" errors
             p = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". Class Size: " + str(c_size) + ". Gender: " + str(g_ratio) + "% Female. Needs: " + str(sped_val) + "% SPED, " + str(fof_val) + "% 504, " + str(el_val) + "% EL. Plan: " + str(lesson_input) + ". Feedback from: 1. Cal Poly Professor, 2. Veteran Teacher (ROI), 3. Students."
-            
             try:
                 response = client.models.generate_content(model="gemini-1.5-flash", contents=p)
                 st.session_state["result"] = response.text
@@ -93,7 +103,7 @@ if st.button("🚀 RUN EVALUATION"):
             except Exception as e:
                 st.error("Error: " + str(e))
 
-# 7. RESULTS DISPLAY
+# 8. RESULTS DISPLAY
 if "result" in st.session_state:
     st.markdown('<div class="critique-card"><h3>📋 The Feedback:</h3>' + str(st.session_state["result"]) + '</div>', unsafe_allow_html=True)
     if st.button("Clear Results"):
