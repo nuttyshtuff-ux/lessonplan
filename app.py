@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from google import genai
+import google.generativeai as genai
 
 # 1. PAGE SETUP
 st.set_page_config(page_title="Lesson Plan Stress Test", page_icon="🍎", layout="wide")
@@ -20,7 +20,7 @@ st.markdown("""
 # 3. API SETUP
 try:
     api_key = st.secrets["api_key"]
-    client = genai.Client(api_key=api_key)
+    genai.configure(api_key=api_key)
 except Exception:
     st.error("🔑 API Key Missing in Secrets!")
     st.stop()
@@ -28,27 +28,25 @@ except Exception:
 # 4. DATA LOADING - The Real California Directory
 @st.cache_data
 def load_school_data():
-    # Direct link to CDE Public School Directory
     url = "https://www.cde.ca.gov/schooldirectory/report?rid=dl1&tp=txt"
-    # Loading as tab-separated since CDE uses .txt/tab format
-    df = pd.read_csv(url, sep='\t', encoding='latin1')
-    # Filter for active schools and keep necessary columns
+    # Using latin1 encoding for CDE data compatibility
+    df = pd.read_csv(url, sep='\t', encoding='latin1', on_bad_lines='skip')
     df = df[df['StatusType'] == 'Active'][['City', 'District', 'School']]
     return df
 
 with st.spinner("Loading California School Directory..."):
-    df = load_school_data()
+    try:
+        df = load_school_data()
+    except:
+        st.warning("CDE Directory offline. Using fallback local list.")
+        df = pd.DataFrame({"City": ["San Luis Obispo"], "District": ["SLCUSD"], "School": ["San Luis High"]})
 
 # 5. SIDEBAR
 with st.sidebar:
     st.header("🏫 CLASSROOM SETUP")
-    
-    # Text input for City as requested
     city_input = st.text_input("City", help="Enter to choose district").strip()
     
-    # Filter data based on city input
     if city_input:
-        # Case-insensitive match for the city
         city_match = df[df['City'].str.contains(city_input, case=False, na=False)]
         dist_options = sorted(city_match['District'].unique())
         dist_choice = st.selectbox("Select District", options=dist_options, index=None)
@@ -86,7 +84,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-p_text = "Paste your lesson plan here (Word, PDF, and Google Doc text formats accepted). For best evaluation be sure your plan includes:\n- Learning Objectives\n- Standards (CCSS, NGSS, etc.)\n- Step-by-Step Activities\n- How you will check for understanding"
+p_text = "Paste your lesson plan here (Word, PDF, and Google Doc text formats accepted). For best evaluation be sure your plan includes:\n- Learning Objectives\n- Standards\n- Step-by-Step Activities\n- How you will check for understanding"
 lesson_input = st.text_area("Your Lesson Plan:", height=350, placeholder=p_text)
 
 # 7. RUN EVALUATION
@@ -95,9 +93,16 @@ if st.button("🚀 RUN EVALUATION"):
         st.warning("Please select a school and paste your lesson plan first!")
     else:
         with st.spinner("Analyzing pedagogical ROI..."):
-            p = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". Class Size: " + str(c_size) + ". Gender: " + str(g_ratio) + "% Female. Needs: " + str(sped_val) + "% SPED, " + str(fof_val) + "% 504, " + str(el_val) + "% EL. Plan: " + str(lesson_input) + ". Feedback from: 1. Cal Poly Professor, 2. Veteran Teacher (ROI), 3. Students."
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            # One clean string for the prompt
+            p = f"Evaluate this {subject} lesson for {grade} at {sch_choice}. "
+            p += f"Class: {c_size} kids, {g_ratio}% Female. "
+            p += f"Needs: {sped_val}% SPED, {fof_val}% 504, {el_val}% EL. "
+            p += f"Plan: {lesson_input}. "
+            p += "Feedback: 1. Cal Poly Professor, 2. Veteran Teacher (ROI), 3. Students."
+            
             try:
-                response = client.models.generate_content(model="gemini-1.5-flash", contents=p)
+                response = model.generate_content(p)
                 st.session_state["result"] = response.text
                 st.rerun()
             except Exception as e:
