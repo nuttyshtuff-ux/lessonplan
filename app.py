@@ -64,7 +64,7 @@ with st.sidebar:
 # 5. MAIN UI
 st.markdown("<h1 class='main-title'>🍎 LESSON PLAN STRESS TEST</h1>", unsafe_allow_html=True)
 
-# THE NEW EXPLANATION BOX
+# THE INFO BOX
 st.markdown("""
 <div class="info-box">
     <strong>📋 What you'll get:</strong><br>
@@ -74,33 +74,10 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# PREPOPULATED TEXT AREA
+# UPDATED PREPOPULATED TEXT AREA
 placeholder_text = (
-    "Copy and paste your lesson plan here. For the best evaluation, include:\n"
+    "Paste your lesson plan here (Word, PDF, and Google Doc text formats accepted). "
+    "For best evaluation be sure your plan includes:\n"
     "- Learning Objectives (What will they learn?)\n"
     "- Standards (CCSS, NGSS, etc.)\n"
-    "- Step-by-Step Activities\n"
-    "- How you will check for understanding"
-)
-lesson_input = st.text_area("Your Lesson Plan:", height=350, placeholder=placeholder_text)
-
-# 6. RUN EVALUATION
-if st.button("🚀 RUN EVALUATION"):
-    if not sch_choice or not lesson_input:
-        st.warning("Please select a school and paste your lesson plan first!")
-    else:
-        with st.spinner("Analyzing pedagogical ROI..."):
-            p = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". Class Size: " + str(c_size) + ". Gender: " + str(g_ratio) + "% Female. Needs: " + str(sped_val) + "% SPED, " + str(fof_val) + "% 504, " + str(el_val) + "% EL. Plan: " + str(lesson_input) + ". Feedback from: 1. Cal Poly Professor (Rigor), 2. Veteran Teacher (ROI of prep), 3. Students."
-            try:
-                response = client.models.generate_content(model="gemini-1.5-flash", contents=p)
-                st.session_state["result"] = response.text
-                st.rerun()
-            except Exception as e:
-                st.error("Error: " + str(e))
-
-# 7. RESULTS DISPLAY
-if "result" in st.session_state:
-    st.markdown('<div class="critique-card"><h3>📋 The Feedback:</h3>' + str(st.session_state["result"]) + '</div>', unsafe_allow_html=True)
-    if st.button("Clear Results"):
-        del st.session_state["result"]
-        st.rerun()
+    "- Step
