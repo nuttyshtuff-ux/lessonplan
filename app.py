@@ -83,7 +83,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 p_text = "Paste your lesson plan here (Word, PDF, and Google Doc text formats accepted). For best evaluation be sure your plan includes:\n- Learning Objectives\n- Standards\n- Step-by-Step Activities\n- How you will check for understanding"
-
 lesson_input = st.text_area("Your Lesson Plan:", height=350, placeholder=p_text)
 
 # 7. RUN EVALUATION
@@ -94,4 +93,23 @@ if st.button("🚀 RUN EVALUATION"):
         with st.spinner("Analyzing pedagogical ROI..."):
             try:
                 model = genai.GenerativeModel('gemini-1.5-flash')
-                prompt = f"Evaluate this {subject} lesson for {grade} at {sch_choice
+                
+                # BULLETPROOF PROMPT BUILDING - NO F-STRINGS
+                prompt = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". "
+                prompt += "Class: " + str(c_size) + " kids, " + str(g_ratio) + "% Female. "
+                prompt += "Needs: " + str(sped_val) + "% SPED, " + str(fof_val) + "% 504, " + str(el_val) + "% EL. "
+                prompt += "Plan: " + str(lesson_input) + ". "
+                prompt += "Feedback: 1. Cal Poly Professor, 2. Veteran Teacher (ROI), 3. Students."
+                
+                response = model.generate_content(prompt)
+                st.session_state["result"] = response.text
+                st.rerun()
+            except Exception as e:
+                st.error("API Error: " + str(e))
+
+# 8. RESULTS DISPLAY
+if "result" in st.session_state:
+    st.markdown('<div class="critique-card"><h3>📋 The Feedback:</h3>' + str(st.session_state["result"]) + '</div>', unsafe_allow_html=True)
+    if st.button("Clear Results"):
+        del st.session_state["result"]
+        st.rerun()
