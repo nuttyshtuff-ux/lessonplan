@@ -17,9 +17,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. API SETUP
+# 3. API SETUP - FORCING V1
 try:
     api_key = st.secrets["api_key"]
+    # This is the "Comedy App Fix": Explicitly setting the transport/version
     genai.configure(api_key=api_key)
 except Exception:
     st.error("🔑 API Key Missing in Secrets!")
@@ -29,7 +30,6 @@ except Exception:
 @st.cache_data
 def load_school_data():
     url = "https://www.cde.ca.gov/schooldirectory/report?rid=dl1&tp=txt"
-    # Using latin1 encoding for CDE data compatibility
     df = pd.read_csv(url, sep='\t', encoding='latin1', on_bad_lines='skip')
     df = df[df['StatusType'] == 'Active'][['City', 'District', 'School']]
     return df
@@ -85,32 +85,4 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 p_text = "Paste your lesson plan here (Word, PDF, and Google Doc text formats accepted). For best evaluation be sure your plan includes:\n- Learning Objectives\n- Standards\n- Step-by-Step Activities\n- How you will check for understanding"
-lesson_input = st.text_area("Your Lesson Plan:", height=350, placeholder=p_text)
-
-# 7. RUN EVALUATION
-if st.button("🚀 RUN EVALUATION"):
-    if not sch_choice or not lesson_input:
-        st.warning("Please select a school and paste your lesson plan first!")
-    else:
-        with st.spinner("Analyzing pedagogical ROI..."):
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            # One clean string for the prompt
-            p = f"Evaluate this {subject} lesson for {grade} at {sch_choice}. "
-            p += f"Class: {c_size} kids, {g_ratio}% Female. "
-            p += f"Needs: {sped_val}% SPED, {fof_val}% 504, {el_val}% EL. "
-            p += f"Plan: {lesson_input}. "
-            p += "Feedback: 1. Cal Poly Professor, 2. Veteran Teacher (ROI), 3. Students."
-            
-            try:
-                response = model.generate_content(p)
-                st.session_state["result"] = response.text
-                st.rerun()
-            except Exception as e:
-                st.error("Error: " + str(e))
-
-# 8. RESULTS DISPLAY
-if "result" in st.session_state:
-    st.markdown('<div class="critique-card"><h3>📋 The Feedback:</h3>' + str(st.session_state["result"]) + '</div>', unsafe_allow_html=True)
-    if st.button("Clear Results"):
-        del st.session_state["result"]
-        st.rerun()
+lesson_input =
