@@ -24,7 +24,7 @@ except Exception:
     st.error("🔑 API Key Missing in Secrets!")
     st.stop()
 
-# Local Mock Data (The "SLO Collection")
+# Local Mock Data
 data = {
     "City": ["San Luis Obispo", "San Luis Obispo", "Atascadero", "Atascadero", "Paso Robles", "Arroyo Grande"],
     "District": ["SLCUSD", "SLCUSD", "Atascadero Unified", "Atascadero Unified", "Paso Robles Joint", "Lucia Mar"],
@@ -36,19 +36,15 @@ df = pd.DataFrame(data)
 with st.sidebar:
     st.header("🏫 CLASSROOM SETUP")
     
-    # Dependent Dropdowns - Restored!
-    city_list = sorted(df["City"].unique())
-    city_choice = st.selectbox("Select City", options=city_list, index=None)
+    city_choice = st.selectbox("Select City", options=sorted(df["City"].unique()), index=None)
     
     if city_choice:
-        dist_list = sorted(df[df["City"] == city_choice]["District"].unique())
-        dist_choice = st.selectbox("Select District", options=dist_list, index=None)
+        dist_choice = st.selectbox("Select District", options=sorted(df[df["City"] == city_choice]["District"].unique()), index=None)
     else:
         dist_choice = st.selectbox("Select District", options=[], disabled=True)
 
     if dist_choice:
-        sch_list = sorted(df[df["District"] == dist_choice]["School"].unique())
-        sch_choice = st.selectbox("Select School", options=sch_list, index=None)
+        sch_choice = st.selectbox("Select School", options=sorted(df[df["District"] == dist_choice]["School"].unique()), index=None)
     else:
         sch_choice = st.selectbox("Select School", options=[], disabled=True)
 
@@ -69,13 +65,4 @@ with st.sidebar:
 st.markdown("<h1 class='main-title'>🍎 LESSON PLAN STRESS TEST</h1>", unsafe_allow_html=True)
 lesson_input = st.text_area("Paste your lesson plan here:", height=400)
 
-# 6. RUN EVALUATION
-if st.button("📝 RUN EVALUATION"):
-    if not sch_choice or not lesson_input:
-        st.warning("Please select a school and paste your lesson plan first!")
-    else:
-        with st.spinner("Class is in session..."):
-            # The prompt builder
-            p = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". "
-            p += "Class Size: " + str(c_size) + ". Gender Ratio: " + str(g_ratio) + "% Female. "
-            p += "Needs: " + str(sped_val) + "% SPED, " + str(fof_val) + "% 504, " + str(el_val) + "%
+# 6.
