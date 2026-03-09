@@ -64,7 +64,6 @@ with st.sidebar:
 # 5. MAIN UI
 st.markdown("<h1 class='main-title'>🍎 LESSON PLAN STRESS TEST</h1>", unsafe_allow_html=True)
 
-# THE INFO BOX
 st.markdown("""
 <div class="info-box">
     <strong>📋 What you'll get:</strong><br>
@@ -74,10 +73,15 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# UPDATED PREPOPULATED TEXT AREA
-placeholder_text = (
-    "Paste your lesson plan here (Word, PDF, and Google Doc text formats accepted). "
-    "For best evaluation be sure your plan includes:\n"
-    "- Learning Objectives (What will they learn?)\n"
-    "- Standards (CCSS, NGSS, etc.)\n"
-    "- Step
+# THE FIXED PLACEHOLDER (All one line to prevent syntax errors)
+p_text = "Paste your lesson plan here (Word, PDF, and Google Doc text formats accepted). For best evaluation be sure your plan includes:\n- Learning Objectives\n- Standards (CCSS, NGSS, etc.)\n- Step-by-Step Activities\n- How you will check for understanding"
+
+lesson_input = st.text_area("Your Lesson Plan:", height=350, placeholder=p_text)
+
+# 6. RUN EVALUATION
+if st.button("🚀 RUN EVALUATION"):
+    if not sch_choice or not lesson_input:
+        st.warning("Please select a school and paste your lesson plan first!")
+    else:
+        with st.spinner("Analyzing pedagogical ROI..."):
+            p = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". Class Size: " + str(c_size) + ". Gender: " + str(g_ratio) +
