@@ -17,7 +17,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. API SETUP (Client approach)
+# 3. API SETUP
 try:
     api_key = st.secrets["api_key"]
     client = genai.Client(api_key=api_key)
@@ -50,10 +50,10 @@ with st.sidebar:
     if dist_choice:
         sch_choice = st.selectbox("School", options=sorted(df[df["District"] == dist_choice]["School"].unique()), index=None)
     else:
-        sch_choice = st.selectbox("School", options=[], disabled=True)
+        sch_choice = st.selectbox("Select School", options=[], disabled=True)
 
     grade = st.selectbox("Grade", ["Grade " + str(i) for i in range(1, 13)])
-    subject = st.text_input("Subject", value="Science")
+    subject = st.text_input("Subject", value="History")
 
 # 6. MAIN UI
 st.markdown("<h1 class='main-title'>🍎 LESSON PLAN STRESS TEST</h1>", unsafe_allow_html=True)
@@ -65,25 +65,30 @@ if st.button("🚀 RUN EVALUATION"):
         st.warning("Please select a school and paste your lesson plan!")
     else:
         with st.spinner("Analyzing pedagogical ROI..."):
-            try:
-                # FIX: Using 'gemini-2.0-flash' which is the 2026 stable version
-                prompt = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". Feedback: 1. Professor, 2. Veteran Teacher, 3. Students. Plan: " + str(lesson_input)
-                
-                response = client.models.generate_content(
-                    model="gemini-2.0-flash",
-                    contents=prompt
-                )
-                st.session_state["result"] = response.text
-                st.rerun()
-            except Exception as e:
-                # If 2.0 isn't available, we try the 2.5 version
+            prompt = f"Evaluate this {subject} lesson for {grade} at {sch_choice}. Feedback from: 1. Professor, 2. Veteran Teacher, 3. Students. Plan: {lesson_input}"
+            
+            # THE FALLBACK LOOP: We try the current 2026 stable models one by one
+            success = False
+            for model_name in ["gemini-2.0-flash-001", "gemini-2.0-flash-exp", "gemini-1.5-pro"]:
                 try:
-                    response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=prompt
+                    )
                     st.session_state["result"] = response.text
-                    st.rerun()
-                except:
-                    st.error("API Error: " + str(e))
+                    success = True
+                    break # Stop if we get a result
+                except Exception:
+                    continue # Try the next model if it fails
+            
+            if success:
+                st.rerun()
+            else:
+                st.error("All available models failed. Please check your API key quota.")
 
 # 8. RESULTS
 if "result" in st.session_state:
     st.markdown('<div class="critique-card"><h3>📋 The Feedback:</h3>' + str(st.session_state["result"]) + '</div>', unsafe_allow_html=True)
+    if st.button("Clear Results"):
+        del st.session_state["result"]
+        st.rerun()
