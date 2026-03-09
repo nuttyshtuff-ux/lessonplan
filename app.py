@@ -64,4 +64,55 @@ with st.sidebar:
     
     st.subheader("📝 Support Needs")
     sped_val = st.slider("SPED / IEP (%)", 0, 100, 10)
-    fof_val = st.slider("504 Plan (%)",
+    fof_val = st.slider("504 Plan (%)", 0, 100, 5)
+    el_val = st.slider("English Learners (%)", 0, 100, 10)
+
+# 6. MAIN UI
+st.markdown("<h1 class='main-title'>🍎 LESSON PLAN STRESS TEST</h1>", unsafe_allow_html=True)
+
+st.markdown("""
+<div class="info-box">
+    <strong>📋 What you'll get:</strong><br>
+    • <strong>The Cal Poly Professor:</strong> High-level feedback on TPA alignment.<br>
+    • <strong>The Veteran Teacher:</strong> A reality check on prep-time vs. student benefit.<br>
+    • <strong>The Students:</strong> What the kids are actually thinking.
+</div>
+""", unsafe_allow_html=True)
+
+# INSTRUCTIONS WITH ACCEPTED FORMATS
+p_text = "Paste your lesson plan here (Word, PDF, and Google Doc text formats accepted). For best evaluation be sure your plan includes:\n- Learning Objectives\n- Standards (CCSS, NGSS, etc.)\n- Step-by-Step Activities\n- How you will check for understanding"
+
+lesson_input = st.text_area("Your Lesson Plan:", height=300, placeholder=p_text)
+
+# 7. RUN EVALUATION
+if st.button("🚀 RUN EVALUATION"):
+    if not sch_choice or not lesson_input:
+        st.warning("Please select a school and paste your lesson plan first!")
+    else:
+        with st.spinner("Analyzing pedagogical ROI..."):
+            # Combining variables into the prompt
+            p = f"Evaluate this {subject} lesson for {grade} at {sch_choice}. "
+            p += f"Class Size: {c_size}, Gender: {g_ratio}% Female. "
+            p += f"Needs: {sped_val}% SPED, {fof_val}% 504, {el_val}% EL learners. "
+            p += f"Plan: {lesson_input}. "
+            p += "Feedback: 1. Cal Poly Professor, 2. Veteran Teacher (ROI), 3. Students."
+            
+            success = False
+            # FALLBACK LOOP - Keeps the app from crashing on 404s
+            for model_name in ["gemini-2.0-flash-001", "gemini-2.0-flash-exp", "gemini-1.5-pro"]:
+                try:
+                    response = client.models.generate_content(model=model_name, contents=p)
+                    st.session_state["result"] = response.text
+                    success = True
+                    break
+                except Exception:
+                    continue
+            
+            if success:
+                st.rerun()
+            else:
+                st.error("All models failed. Check your API key quota.")
+
+# 8. RESULTS DISPLAY
+if "result" in st.session_state:
+    st.markdown('<div class="critique-card"><h3>📋 The Feedback:</h3>' + str(st.session_state["result"]) + '</div>',
