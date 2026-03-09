@@ -5,7 +5,7 @@ from google import genai
 # 1. PAGE SETUP
 st.set_page_config(page_title="Lesson Plan Stress Test", page_icon="🍎", layout="wide")
 
-# 2. CSS (Restored your Navy/Yellow Theme)
+# 2. CSS (Navy & Yellow)
 st.markdown("""
 <style>
     .main-title { color: #1e3a8a; font-weight: 800; text-align: center; border: 3px solid #1e3a8a; padding: 20px; border-radius: 20px; background-color: #f8fbff; margin-bottom: 30px; }
@@ -17,13 +17,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. API SETUP (Modern Client)
+# 3. API SETUP (Client approach)
 try:
     api_key = st.secrets["api_key"]
-    # No .configure() needed, we use a Client object now
     client = genai.Client(api_key=api_key)
 except Exception:
-    st.error("🔑 API Key Missing in Secrets!")
+    st.error("🔑 API Key Missing!")
     st.stop()
 
 # 4. DATA LOADING
@@ -40,25 +39,25 @@ df = load_school_data()
 
 # 5. SIDEBAR
 with st.sidebar:
-    st.header("🏫 CLASSROOM SETUP")
+    st.header("🏫 SETUP")
     city_input = st.text_input("City").strip()
     if city_input:
         match = df[df['City'].str.contains(city_input, case=False, na=False)]
-        dist_choice = st.selectbox("Select District", options=sorted(match['District'].unique()), index=None)
+        dist_choice = st.selectbox("District", options=sorted(match['District'].unique()), index=None)
     else:
-        dist_choice = st.selectbox("Select District", options=[], disabled=True)
+        dist_choice = st.selectbox("District", options=[], disabled=True)
 
     if dist_choice:
-        sch_choice = st.selectbox("Select School", options=sorted(df[df["District"] == dist_choice]["School"].unique()), index=None)
+        sch_choice = st.selectbox("School", options=sorted(df[df["District"] == dist_choice]["School"].unique()), index=None)
     else:
-        sch_choice = st.selectbox("Select School", options=[], disabled=True)
+        sch_choice = st.selectbox("School", options=[], disabled=True)
 
-    grade = st.selectbox("Grade Level", ["Kindergarten"] + ["Grade " + str(i) for i in range(1, 13)])
-    subject = st.text_input("Subject Area", value="Science")
+    grade = st.selectbox("Grade", ["Grade " + str(i) for i in range(1, 13)])
+    subject = st.text_input("Subject", value="Science")
 
 # 6. MAIN UI
 st.markdown("<h1 class='main-title'>🍎 LESSON PLAN STRESS TEST</h1>", unsafe_allow_html=True)
-lesson_input = st.text_area("Your Lesson Plan:", height=350)
+lesson_input = st.text_area("Your Lesson Plan:", height=300)
 
 # 7. RUN EVALUATION
 if st.button("🚀 RUN EVALUATION"):
@@ -67,17 +66,23 @@ if st.button("🚀 RUN EVALUATION"):
     else:
         with st.spinner("Analyzing pedagogical ROI..."):
             try:
-                # MODERN CALL: Explicitly bypasses the 'v1beta' issue
-                prompt = f"Evaluate this {subject} lesson for {grade} at {sch_choice}. Feedback: 1. Professor, 2. Veteran, 3. Students. Plan: {lesson_input}"
+                # FIX: Using 'gemini-2.0-flash' which is the 2026 stable version
+                prompt = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". Feedback: 1. Professor, 2. Veteran Teacher, 3. Students. Plan: " + str(lesson_input)
                 
                 response = client.models.generate_content(
-                    model="gemini-1.5-flash",
+                    model="gemini-2.0-flash",
                     contents=prompt
                 )
                 st.session_state["result"] = response.text
                 st.rerun()
             except Exception as e:
-                st.error(f"API Error: {str(e)}")
+                # If 2.0 isn't available, we try the 2.5 version
+                try:
+                    response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+                    st.session_state["result"] = response.text
+                    st.rerun()
+                except:
+                    st.error("API Error: " + str(e))
 
 # 8. RESULTS
 if "result" in st.session_state:
