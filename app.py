@@ -17,10 +17,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 3. API SETUP - FORCING V1
+# 3. API SETUP
 try:
     api_key = st.secrets["api_key"]
-    # This is the "Comedy App Fix": Explicitly setting the transport/version
     genai.configure(api_key=api_key)
 except Exception:
     st.error("🔑 API Key Missing in Secrets!")
@@ -30,16 +29,15 @@ except Exception:
 @st.cache_data
 def load_school_data():
     url = "https://www.cde.ca.gov/schooldirectory/report?rid=dl1&tp=txt"
-    df = pd.read_csv(url, sep='\t', encoding='latin1', on_bad_lines='skip')
-    df = df[df['StatusType'] == 'Active'][['City', 'District', 'School']]
-    return df
+    try:
+        df = pd.read_csv(url, sep='\t', encoding='latin1', on_bad_lines='skip')
+        df = df[df['StatusType'] == 'Active'][['City', 'District', 'School']]
+        return df
+    except:
+        return pd.DataFrame({"City": ["San Luis Obispo"], "District": ["SLCUSD"], "School": ["San Luis High"]})
 
 with st.spinner("Loading California School Directory..."):
-    try:
-        df = load_school_data()
-    except:
-        st.warning("CDE Directory offline. Using fallback local list.")
-        df = pd.DataFrame({"City": ["San Luis Obispo"], "District": ["SLCUSD"], "School": ["San Luis High"]})
+    df = load_school_data()
 
 # 5. SIDEBAR
 with st.sidebar:
@@ -84,5 +82,15 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# THE PLACEHOLDER
 p_text = "Paste your lesson plan here (Word, PDF, and Google Doc text formats accepted). For best evaluation be sure your plan includes:\n- Learning Objectives\n- Standards\n- Step-by-Step Activities\n- How you will check for understanding"
-lesson_input =
+
+# THE TEXT AREA
+lesson_input = st.text_area("Your Lesson Plan:", height=350, placeholder=p_text)
+
+# 7. RUN EVALUATION
+if st.button("🚀 RUN EVALUATION"):
+    if not sch_choice or not lesson_input:
+        st.warning("Please select a school and paste your lesson plan first!")
+    else:
+        with st.spinner("Analyzing pedagogical ROI..."):
