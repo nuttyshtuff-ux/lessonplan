@@ -22,7 +22,7 @@ try:
     api_key = st.secrets["api_key"]
     client = genai.Client(api_key=api_key)
 except Exception:
-    st.error("🔑 API Key Missing in Streamlit Secrets!")
+    st.error("🔑 API Key Missing!")
     st.stop()
 
 # 4. DATA LOADING
@@ -40,19 +40,16 @@ df = load_school_data()
 # 5. SIDEBAR
 with st.sidebar:
     st.header("🏫 CLASSROOM SETUP")
-    
     city_input = st.text_input("Enter city to select district").strip()
     
     if city_input:
         match = df[df['City'].str.contains(city_input, case=False, na=False)]
-        dist_options = sorted(match['District'].unique())
-        dist_choice = st.selectbox("Select District", options=dist_options, index=None)
+        dist_choice = st.selectbox("Select District", options=sorted(match['District'].unique()), index=None)
     else:
         dist_choice = st.selectbox("Select District", options=[], disabled=True)
 
     if dist_choice:
-        sch_options = sorted(df[df["District"] == dist_choice]["School"].unique())
-        sch_choice = st.selectbox("Select School", options=sch_options, index=None)
+        sch_choice = st.selectbox("Select School", options=sorted(df[df["District"] == dist_choice]["School"].unique()), index=None)
     else:
         sch_choice = st.selectbox("Select School", options=[], disabled=True)
 
@@ -81,8 +78,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-p_text = "Paste your lesson plan here (Word, PDF, and Google Doc text formats accepted). For best evaluation be sure your plan includes:\n- Learning Objectives\n- Standards (CCSS, NGSS, etc.)\n- Step-by-Step Activities\n- How you will check for understanding"
-
+p_text = "Paste your lesson plan here. Include Objectives, Standards, and Activities."
 lesson_input = st.text_area("Your Lesson Plan:", height=300, placeholder=p_text)
 
 # 7. RUN EVALUATION
@@ -91,31 +87,27 @@ if st.button("🚀 RUN EVALUATION"):
         st.warning("Please select a school and paste your lesson plan first!")
     else:
         with st.spinner("Analyzing pedagogical ROI..."):
-            p = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". "
-            p += "Class Size: " + str(c_size) + ", Gender: " + str(g_ratio) + "% Female. "
-            p += "Needs: " + str(sped_val) + "% SPED, " + str(fof_val) + "% 504, " + str(el_val) + "% EL learners. "
-            p += "Plan: " + str(lesson_input) + ". "
-            p += "Feedback: 1. Cal Poly Professor, 2. Veteran Teacher (ROI), 3. Students."
+            prompt = f"Evaluate this {subject} lesson for {grade} at {sch_choice}. Feedback: 1. Professor, 2. Veteran, 3. Students. Plan: {lesson_input}"
             
             success = False
-            error_details = "None"
+            last_error = "No models attempted."
             
-            # Using the Gemini 3 Flash engine (powered by Nano Banana 2)
-            # Models: gemini-3-flash, gemini-2.0-flash-001
-            for model_name in ["gemini-3-flash", "gemini-2.0-flash-001", "gemini-1.5-pro"]:
+            # MARCH 9th UPDATE: Switched to 2.5 and 3.1 Stable release aliases
+            # Image generation is now on Nano Banana 2, but text is on Gemini 3.1
+            for model_name in ["gemini-3.1-flash", "gemini-2.5-flash", "gemini-2.5-pro"]:
                 try:
-                    response = client.models.generate_content(model=model_name, contents=p)
+                    response = client.models.generate_content(model=model_name, contents=prompt)
                     st.session_state["result"] = response.text
                     success = True
                     break
                 except Exception as e:
-                    error_details = str(e)
+                    last_error = str(e)
                     continue
             
             if success:
                 st.rerun()
             else:
-                st.error("Connection Failed. Details: " + error_details)
+                st.error("System Sync Error: " + last_error)
 
 # 8. RESULTS DISPLAY
 if "result" in st.session_state:
