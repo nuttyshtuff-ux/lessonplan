@@ -1,12 +1,11 @@
 import streamlit as st
 import pandas as pd
 import google.generativeai as genai
-from google.generativeai.types import RequestOptions
 
 # 1. PAGE SETUP
 st.set_page_config(page_title="Lesson Plan Stress Test", page_icon="🍎", layout="wide")
 
-# 2. CSS - Navy Sidebar, High-Contrast Black Text
+# 2. CSS - Navy/Yellow Theme
 st.markdown("""
 <style>
     .main-title { color: #1e3a8a; font-weight: 800; text-align: center; border: 3px solid #1e3a8a; padding: 20px; border-radius: 20px; background-color: #f8fbff; margin-bottom: 30px; }
@@ -26,7 +25,7 @@ except Exception:
     st.error("🔑 API Key Missing in Secrets!")
     st.stop()
 
-# 4. DATA LOADING
+# 4. DATA LOADING (CDE Directory)
 @st.cache_data
 def load_school_data():
     url = "https://www.cde.ca.gov/schooldirectory/report?rid=dl1&tp=txt"
@@ -77,37 +76,32 @@ st.markdown("<h1 class='main-title'>🍎 LESSON PLAN STRESS TEST</h1>", unsafe_a
 st.markdown("""
 <div class="info-box">
     <strong>📋 What you'll get:</strong><br>
-    • <strong>The Cal Poly Professor:</strong> High-level feedback on TPA alignment and measurable objectives.<br>
-    • <strong>The Veteran Teacher:</strong> A "Real-World" reality check on prep-time vs. student benefit (ROI).<br>
-    • <strong>The Students:</strong> An unfiltered look at what the kids are actually thinking during your lesson.
+    • <strong>The Cal Poly Professor:</strong> High-level feedback on TPA alignment.<br>
+    • <strong>The Veteran Teacher:</strong> A reality check on prep-time vs. student benefit.<br>
+    • <strong>The Students:</strong> What the kids are actually thinking.
 </div>
 """, unsafe_allow_html=True)
 
-p_text = "Paste your lesson plan here (Word, PDF, and Google Doc text formats accepted). For best evaluation be sure your plan includes:\n- Learning Objectives\n- Standards\n- Step-by-Step Activities\n- How you will check for understanding"
+p_text = "Paste your lesson plan here. Include Objectives, Standards, and Activities."
 lesson_input = st.text_area("Your Lesson Plan:", height=350, placeholder=p_text)
 
 # 7. RUN EVALUATION
 if st.button("🚀 RUN EVALUATION"):
     if not sch_choice or not lesson_input:
-        st.warning("Please select a school and paste your lesson plan first!")
+        st.warning("Please select a school and paste your lesson plan!")
     else:
         with st.spinner("Analyzing pedagogical ROI..."):
             try:
-                # FORCING API VERSION V1
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                # THIS IS THE COMEDY APP FIX: Explicitly using the production model string
+                model = genai.GenerativeModel('models/gemini-1.5-flash')
                 
                 prompt = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". "
                 prompt += "Class: " + str(c_size) + " kids, " + str(g_ratio) + "% Female. "
                 prompt += "Needs: " + str(sped_val) + "% SPED, " + str(fof_val) + "% 504, " + str(el_val) + "% EL. "
                 prompt += "Plan: " + str(lesson_input) + ". "
-                prompt += "Feedback: 1. Cal Poly Professor, 2. Veteran Teacher (ROI), 3. Students."
+                prompt += "Feedback: 1. Professor, 2. Veteran (ROI), 3. Students."
                 
-                # The 'request_options' here is the magic fix that forces the stable API
-                response = model.generate_content(
-                    prompt, 
-                    request_options=RequestOptions(api_version="v1")
-                )
-                
+                response = model.generate_content(prompt)
                 st.session_state["result"] = response.text
                 st.rerun()
             except Exception as e:
