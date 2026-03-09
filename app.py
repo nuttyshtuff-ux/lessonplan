@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import google.generativeai as genai
+from google.generativeai.types import RequestOptions
 
 # 1. PAGE SETUP
 st.set_page_config(page_title="Lesson Plan Stress Test", page_icon="🍎", layout="wide")
@@ -78,7 +79,7 @@ st.markdown("""
     <strong>📋 What you'll get:</strong><br>
     • <strong>The Cal Poly Professor:</strong> High-level feedback on TPA alignment and measurable objectives.<br>
     • <strong>The Veteran Teacher:</strong> A "Real-World" reality check on prep-time vs. student benefit (ROI).<br>
-    • <strong>The Students:</strong> An unfiltered look at what the kids actually thinking during your lesson.
+    • <strong>The Students:</strong> An unfiltered look at what the kids are actually thinking during your lesson.
 </div>
 """, unsafe_allow_html=True)
 
@@ -92,8 +93,8 @@ if st.button("🚀 RUN EVALUATION"):
     else:
         with st.spinner("Analyzing pedagogical ROI..."):
             try:
-                # FIXED: This exact model name bypasses the v1beta 404 error
-                model = genai.GenerativeModel('gemini-1.5-flash-latest')
+                # FORCING API VERSION V1
+                model = genai.GenerativeModel('gemini-1.5-flash')
                 
                 prompt = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". "
                 prompt += "Class: " + str(c_size) + " kids, " + str(g_ratio) + "% Female. "
@@ -101,18 +102,16 @@ if st.button("🚀 RUN EVALUATION"):
                 prompt += "Plan: " + str(lesson_input) + ". "
                 prompt += "Feedback: 1. Cal Poly Professor, 2. Veteran Teacher (ROI), 3. Students."
                 
-                response = model.generate_content(prompt)
+                # The 'request_options' here is the magic fix that forces the stable API
+                response = model.generate_content(
+                    prompt, 
+                    request_options=RequestOptions(api_version="v1")
+                )
+                
                 st.session_state["result"] = response.text
                 st.rerun()
             except Exception as e:
-                # Final fallback for older API endpoints
-                try:
-                    model = genai.GenerativeModel('gemini-1.5-flash')
-                    response = model.generate_content(prompt)
-                    st.session_state["result"] = response.text
-                    st.rerun()
-                except Exception as e2:
-                    st.error("API Error: " + str(e2))
+                st.error("API Error: " + str(e))
 
 # 8. RESULTS DISPLAY
 if "result" in st.session_state:
