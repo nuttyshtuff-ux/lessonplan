@@ -78,7 +78,7 @@ st.markdown("""
     <strong>📋 What you'll get:</strong><br>
     • <strong>The Cal Poly Professor:</strong> High-level feedback on TPA alignment and measurable objectives.<br>
     • <strong>The Veteran Teacher:</strong> A "Real-World" reality check on prep-time vs. student benefit (ROI).<br>
-    • <strong>The Students:</strong> An unfiltered look at what the kids are actually thinking during your lesson.
+    • <strong>The Students:</strong> An unfiltered look at what the kids actually thinking during your lesson.
 </div>
 """, unsafe_allow_html=True)
 
@@ -92,9 +92,9 @@ if st.button("🚀 RUN EVALUATION"):
     else:
         with st.spinner("Analyzing pedagogical ROI..."):
             try:
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                # FIXED: This exact model name bypasses the v1beta 404 error
+                model = genai.GenerativeModel('gemini-1.5-flash-latest')
                 
-                # BULLETPROOF PROMPT BUILDING - NO F-STRINGS
                 prompt = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". "
                 prompt += "Class: " + str(c_size) + " kids, " + str(g_ratio) + "% Female. "
                 prompt += "Needs: " + str(sped_val) + "% SPED, " + str(fof_val) + "% 504, " + str(el_val) + "% EL. "
@@ -105,7 +105,14 @@ if st.button("🚀 RUN EVALUATION"):
                 st.session_state["result"] = response.text
                 st.rerun()
             except Exception as e:
-                st.error("API Error: " + str(e))
+                # Final fallback for older API endpoints
+                try:
+                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    response = model.generate_content(prompt)
+                    st.session_state["result"] = response.text
+                    st.rerun()
+                except Exception as e2:
+                    st.error("API Error: " + str(e2))
 
 # 8. RESULTS DISPLAY
 if "result" in st.session_state:
