@@ -36,7 +36,8 @@ df = pd.DataFrame(data)
 with st.sidebar:
     st.header("🏫 CLASSROOM SETUP")
     
-    city_choice = st.selectbox("Select City", options=sorted(df["City"].unique()), index=None)
+    # City as a text box per your request
+    city_choice = st.text_input("City", help="Enter to choose district")
     
     if city_choice:
         dist_choice = st.selectbox("Select District", options=sorted(df[df["City"] == city_choice]["District"].unique()), index=None)
@@ -50,7 +51,9 @@ with st.sidebar:
 
     st.markdown("---")
     grade = st.selectbox("Grade Level", ["Kindergarten"] + ["Grade " + str(i) for i in range(1, 13)])
-    subject = st.text_input("Subject Area", value="General Ed")
+    
+    # Prepopulated Subject Area
+    subject = st.text_input("Subject Area", value="Choose your subject")
     
     st.subheader("📊 Class Composition")
     c_size = st.slider("Total Class Size", 5, 50, 30)
@@ -65,4 +68,24 @@ with st.sidebar:
 st.markdown("<h1 class='main-title'>🍎 LESSON PLAN STRESS TEST</h1>", unsafe_allow_html=True)
 lesson_input = st.text_area("Paste your lesson plan here:", height=400)
 
-# 6.
+# 6. RUN EVALUATION
+if st.button("🚀 RUN EVALUATION"):
+    if not sch_choice or not lesson_input:
+        st.warning("Please select a school and paste your lesson plan first!")
+    else:
+        with st.spinner("Class is in session..."):
+            p = "Evaluate this " + str(subject) + " lesson for " + str(grade) + " at " + str(sch_choice) + ". Class Size: " + str(c_size) + ". Gender: " + str(g_ratio) + "% Female. Needs: " + str(sped_val) + "% SPED, " + str(fof_val) + "% 504, " + str(el_val) + "% EL. Plan: " + str(lesson_input) + ". Feedback from: 1. Cal Poly Professor (Rigor), 2. Veteran Teacher (ROI of prep), 3. Students."
+            
+            try:
+                response = client.models.generate_content(model="gemini-1.5-flash", contents=p)
+                st.session_state["result"] = response.text
+                st.rerun()
+            except Exception as e:
+                st.error("Error: " + str(e))
+
+# 7. RESULTS DISPLAY
+if "result" in st.session_state:
+    st.markdown('<div class="critique-card"><h3>📋 The Feedback:</h3>' + str(st.session_state["result"]) + '</div>', unsafe_allow_html=True)
+    if st.button("Clear Results"):
+        del st.session_state["result"]
+        st.rerun()
